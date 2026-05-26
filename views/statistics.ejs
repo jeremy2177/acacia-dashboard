@@ -1,0 +1,428 @@
+<%- include('layout/header', { title: title, pageClass: 'page-statistics' }) %>
+<%- include('layout/nav') %>
+
+<main class="main-content">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-title-row">
+      <h1>Advanced Statistics</h1>
+      <span class="number text-muted">Deep Analytics Engine</span>
+    </div>
+    <p class="page-subtitle">Track, filter, and dissect your historical covered call trading metrics.</p>
+  </div>
+
+  <!-- Tab Selector Navigation -->
+  <div class="card flex" style="padding: var(--space-2); gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4);">
+    <button class="btn btn--secondary btn--sm tab-btn active" onclick="switchTab('tab-overview')">Overview</button>
+    <button class="btn btn--secondary btn--sm tab-btn" onclick="switchTab('tab-income')">Income Analytics</button>
+    <button class="btn btn--secondary btn--sm tab-btn" onclick="switchTab('tab-performance')">Performance Metrics</button>
+    <button class="btn btn--secondary btn--sm tab-btn" onclick="switchTab('tab-risk')">Risk Analysis</button>
+  </div>
+
+  <!-- SECTION 1: OVERVIEW TAB -->
+  <div id="tab-overview" class="tab-pane active flex flex-col gap-6">
+    <div class="grid-2x2-mobile">
+      <!-- Total Premium -->
+      <div class="stat-card stat-card--accent">
+        <span class="stat-label">Total Premium Harvested</span>
+        <span class="stat-value number text-success">$<%= summary.totalPremium.toFixed(2) %></span>
+        <span class="text-muted" style="font-size: var(--text-xs);">Gross premium from inception</span>
+      </div>
+
+      <!-- Realized P&L -->
+      <div class="stat-card <%= summary.totalPnL >= 0 ? 'stat-card--positive' : 'stat-card--negative' %>">
+        <span class="stat-label">Realized Profit / Loss</span>
+        <span class="stat-value number <%= summary.totalPnL >= 0 ? 'text-success' : 'text-danger' %>">
+          <%= summary.totalPnL >= 0 ? '+' : '' %>$<%= summary.totalPnL.toFixed(2) %>
+        </span>
+        <span class="text-muted" style="font-size: var(--text-xs);">Realized net premium after buybacks</span>
+      </div>
+
+      <!-- Option Win Rate -->
+      <div class="stat-card stat-card--positive">
+        <span class="stat-label">Option Win Rate</span>
+        <span class="stat-value number text-success"><%= summary.winRate.toFixed(2) %>%</span>
+        <span class="text-muted" style="font-size: var(--text-xs);"><%= summary.winCount %> wins out of <%= summary.totalClosedTrades %> closed trades</span>
+      </div>
+
+      <!-- Average Yield per Trade -->
+      <div class="stat-card stat-card--warning">
+        <span class="stat-label">Average Trade Yield (ROC)</span>
+        <span class="stat-value number text-success"><%= summary.avgReturnPerTrade.toFixed(2) %>%</span>
+        <span class="text-muted" style="font-size: var(--text-xs);">Mean Return on Capital per trade</span>
+      </div>
+    </div>
+
+    <div class="grid-1-col grid-2-col-desktop">
+      <!-- Secondary Stats Panel -->
+      <div class="card flex flex-col gap-3">
+        <div class="card-header">
+          <h3 class="card-title">Portfolio Performance Indicators</h3>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Mean Annualized Trade Return:</span>
+          <span class="number text-success" style="font-weight: 600;"><%= summary.avgAnnualizedReturn.toFixed(2) %>%</span>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Average Days Option Held:</span>
+          <span class="number" style="font-weight: 600;"><%= summary.avgDaysHeld %> Days</span>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Open Positions Active:</span>
+          <span class="number" style="font-weight: 600;"><%= summary.openPositions %> Positions</span>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Assignment Frequency:</span>
+          <span class="number text-warning" style="font-weight: 600;"><%= summary.assignmentRate.toFixed(2) %>%</span>
+        </div>
+      </div>
+
+      <!-- Quick Ticker Performance Summary Table -->
+      <div class="card flex flex-col gap-4">
+        <div class="card-header">
+          <h3 class="card-title">Ticker Performance Ranking</h3>
+        </div>
+        <% if (annualizedTicker.length === 0) { %>
+          <p class="text-muted" style="font-size: var(--text-sm);">No closed trade data available to compute underlying rankings.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table" style="font-size: var(--text-xs);">
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Trades</th>
+                  <th>Win Rate</th>
+                  <th>Avg Annualized</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% annualizedTicker.forEach(t => { %>
+                  <tr>
+                    <td class="number" style="font-weight: 700;"><%= t.ticker %></td>
+                    <td class="number"><%= t.trade_count %></td>
+                    <td class="number text-success"><%= (t.closed > 0 ? (t.wins / t.closed * 100) : 0).toFixed(1) %>%</td>
+                    <td class="number text-success"><%= t.avg_annualized.toFixed(2) %>%</td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: INCOME ANALYTICS TAB -->
+  <div id="tab-income" class="tab-pane flex flex-col gap-6" style="display: none;">
+    <!-- Sliding windows grid -->
+    <div class="grid-3-col-desktop" style="display: grid; gap: var(--space-4);">
+      <div class="stat-card stat-card--positive">
+        <span class="stat-label">30-Day Premium Income</span>
+        <span class="stat-value number text-success">$<%= rolling.r30.toFixed(2) %></span>
+      </div>
+      <div class="stat-card stat-card--positive">
+        <span class="stat-label">60-Day Premium Income</span>
+        <span class="stat-value number text-success">$<%= rolling.r60.toFixed(2) %></span>
+      </div>
+      <div class="stat-card stat-card--positive">
+        <span class="stat-label">90-Day Premium Income</span>
+        <span class="stat-value number text-success">$<%= rolling.r90.toFixed(2) %></span>
+      </div>
+    </div>
+
+    <!-- Monthly Chart -->
+    <div class="chart-container chart-container--large">
+      <div class="chart-header">
+        <h3 class="chart-title">Monthly Premium Income</h3>
+      </div>
+      <canvas id="stats-income-canvas"></canvas>
+    </div>
+
+    <!-- Income by Ticker -->
+    <div class="card flex flex-col gap-4">
+      <div class="card-header">
+        <h3 class="card-title">Premium Income Generated By Ticker</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ticker Symbol</th>
+              <th>Trades Logged</th>
+              <th>Total Premium Gathered</th>
+              <th>Realized Trade P&L</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% incomeTicker.forEach(t => { %>
+              <tr>
+                <td class="number" style="font-weight: 700; font-size: var(--text-base);"><%= t.ticker %></td>
+                <td class="number"><%= t.trade_count %> trades</td>
+                <td class="number text-success">$<%= t.total_premium.toFixed(2) %></td>
+                <td class="number <%= t.net_pnl >= 0 ? 'text-success' : 'text-danger' %>">
+                  <%= t.net_pnl >= 0 ? '+' : '' %>$<%= t.net_pnl.toFixed(2) %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: PERFORMANCE METRICS TAB -->
+  <div id="tab-performance" class="tab-pane flex flex-col gap-6" style="display: none;">
+    <div class="grid-2x2-mobile">
+      <!-- Best Trade -->
+      <div class="stat-card stat-card--positive">
+        <span class="stat-label">🏆 Best Single Trade P&L</span>
+        <span class="stat-value number text-success">
+          <% if (performance.bestTrade) { %>
+            +$<%= performance.bestTrade.profit_loss.toFixed(2) %>
+            <span style="font-size: var(--text-xs); font-weight: 500; color: var(--color-text-secondary); display: block; margin-top: 4px;">
+              Ticker: <%= performance.bestTrade.ticker %> | Strike: $<%= performance.bestTrade.strike_price %>
+            </span>
+          <% } else { %>
+            --
+          <% } %>
+        </span>
+      </div>
+
+      <!-- Worst Trade -->
+      <div class="stat-card stat-card--negative">
+        <span class="stat-label">🚨 Worst Single Trade P&L</span>
+        <span class="stat-value number text-danger">
+          <% if (performance.worstTrade) { %>
+            $<%= performance.worstTrade.profit_loss.toFixed(2) %>
+            <span style="font-size: var(--text-xs); font-weight: 500; color: var(--color-text-secondary); display: block; margin-top: 4px;">
+              Ticker: <%= performance.worstTrade.ticker %> | Strike: $<%= performance.worstTrade.strike_price %>
+            </span>
+          <% } else { %>
+            --
+          <% } %>
+        </span>
+      </div>
+
+      <!-- Average days -->
+      <div class="stat-card stat-card--accent">
+        <span class="stat-label">Average Days to Expiry (Entry)</span>
+        <span class="stat-value number"><%= performance.avgDTE %> Days</span>
+        <span class="text-muted" style="font-size: var(--text-xs);">Optimal target range is 30-45 days</span>
+      </div>
+
+      <!-- Implied Volatility -->
+      <div class="stat-card stat-card--warning">
+        <span class="stat-label">Average Implied Volatility (Entry)</span>
+        <span class="stat-value number text-warning">
+          <%= performance.avgIV > 0 ? performance.avgIV.toFixed(2) + '%' : '--' %>
+        </span>
+        <span class="text-muted" style="font-size: var(--text-xs);">Higher IV offers thicker option premiums</span>
+      </div>
+    </div>
+
+    <div class="grid-1-col grid-2-col-desktop">
+      <!-- Streak analysis -->
+      <div class="card flex flex-col gap-4">
+        <div class="card-header">
+          <h3 class="card-title">Trading Win/Loss Streaks</h3>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Longest Consecutive Winning Streak:</span>
+          <span class="number text-success" style="font-weight: 700; font-size: var(--text-lg);"><%= performance.maxWinStreak %> Wins</span>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Longest Consecutive Losing Streak:</span>
+          <span class="number text-danger" style="font-weight: 700; font-size: var(--text-lg);"><%= performance.maxLossStreak %> Losses</span>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Current Winning Streak:</span>
+          <span class="number text-success" style="font-weight: 600;"><%= performance.currentWinStreak %> Wins</span>
+        </div>
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2); font-size: var(--text-sm);">
+          <span class="text-muted">Current Losing Streak:</span>
+          <span class="number text-danger" style="font-weight: 600;"><%= performance.currentLossStreak %> Losses</span>
+        </div>
+      </div>
+
+      <!-- Strike Selection Analysis Table -->
+      <div class="card flex flex-col gap-4">
+        <div class="card-header">
+          <h3 class="card-title">Moneyness Strike Distribution</h3>
+        </div>
+        <% if (performance.strikeAnalysis.length === 0) { %>
+          <p class="text-muted" style="font-size: var(--text-sm);">Log trade underlying prices to compute moneyness analysis.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Strike Location</th>
+                  <th>Trades count</th>
+                  <th>Avg Option P&L</th>
+                  <th>Avg Return (ROC)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% performance.strikeAnalysis.forEach(sa => { %>
+                  <tr>
+                    <td class="number" style="font-weight: 700;"><%= sa.moneyness %></td>
+                    <td class="number"><%= sa.count %> trades</td>
+                    <td class="number <%= sa.avg_pnl >= 0 ? 'text-success' : 'text-danger' %>">$<%= sa.avg_pnl.toFixed(2) %></td>
+                    <td class="number text-success"><%= sa.avg_roc.toFixed(2) %>%</td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: RISK ANALYSIS TAB -->
+  <div id="tab-risk" class="tab-pane flex flex-col gap-6" style="display: none;">
+    <div class="grid-2x2-mobile">
+      <!-- Max Capital Exposure -->
+      <div class="stat-card stat-card--danger">
+        <span class="stat-label">Max Assignment Capital Exposure</span>
+        <span class="stat-value number text-danger">
+          <%= risk.maxExposure.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %>
+        </span>
+        <span class="text-muted" style="font-size: var(--text-xs);">Total capital bound if all open calls get assigned</span>
+      </div>
+
+      <!-- Assignment Rate -->
+      <div class="stat-card stat-card--warning">
+        <span class="stat-label">Assignment frequency rate</span>
+        <span class="stat-value number text-warning"><%= risk.assignmentRate.toFixed(2) %>%</span>
+        <span class="text-muted" style="font-size: var(--text-xs);"><%= risk.assignedCount %> assignments on <%= risk.totalClosedTrades %> closed trades</span>
+      </div>
+
+      <!-- Drawdown stats -->
+      <div class="stat-card stat-card--danger">
+        <span class="stat-label">Maximum realized Drawdown</span>
+        <span class="stat-value number text-danger">$<%= risk.maxDrawdown.toFixed(2) %></span>
+        <span class="text-muted" style="font-size: var(--text-xs);">Peak-to-valley premium decay loss period</span>
+      </div>
+
+      <!-- Concentration Limit -->
+      <div class="stat-card stat-card--accent">
+        <span class="stat-label">Maximum Single Ticker Risk</span>
+        <span class="stat-value number">
+          <% if (risk.concentration.length > 0) { %>
+            <%= risk.concentration[0].percentage.toFixed(1) %>%
+            <span style="font-size: var(--text-xs); font-weight: 500; color: var(--color-text-secondary); display: block; margin-top: 4px;">
+              Ticker: <%= risk.concentration[0].ticker %>
+            </span>
+          <% } else { %>
+            0.0%
+          <% } %>
+        </span>
+      </div>
+    </div>
+
+    <!-- Doughnut concentration layout split -->
+    <div class="grid-1-col grid-2-col-desktop">
+      <!-- Doughnut Chart Container -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3 class="chart-title">Risk Exposure Concentration</h3>
+        </div>
+        <% if (risk.concentration.length === 0) { %>
+          <div class="empty-state" style="border: none; padding: var(--space-4);">
+            <p class="empty-text">No active open positions to compute risk distribution.</p>
+          </div>
+        <% } else { %>
+          <canvas id="stats-risk-doughnut"></canvas>
+        <% } %>
+      </div>
+
+      <!-- Risk Concentration Heatmap table -->
+      <div class="card flex flex-col gap-4">
+        <div class="card-header">
+          <h3 class="card-title">Ticker Concentration Breakdown</h3>
+        </div>
+        <% if (risk.concentration.length === 0) { %>
+          <p class="text-muted" style="font-size: var(--text-sm);">No active open trades.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Open Exposure</th>
+                  <th>Concentration %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% risk.concentration.forEach(c => { %>
+                  <tr>
+                    <td class="number" style="font-weight: 700;"><%= c.ticker %></td>
+                    <td class="number">$<%= c.exposure.toLocaleString() %></td>
+                    <td class="number">
+                      <div style="display: flex; align-items: center; gap: var(--space-2);">
+                        <div style="background-color: var(--color-border); height: 8px; width: 60px; border-radius: 4px; overflow: hidden;">
+                          <div style="background-color: var(--color-accent); height: 100%; width: <%= c.percentage %>%;"></div>
+                        </div>
+                        <span class="number"><%= c.percentage.toFixed(1) %>%</span>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Simple clientside tab switcher
+  function switchTab(tabId) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-pane').forEach(el => {
+      el.style.display = 'none';
+    });
+    // Remove active styles on tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+      btn.classList.add('btn--secondary');
+      btn.classList.remove('btn--primary');
+    });
+    
+    // Show chosen tab
+    const selectedPane = document.getElementById(tabId);
+    if (selectedPane) {
+      selectedPane.style.display = 'flex';
+      selectedPane.style.flexDirection = 'column';
+    }
+    
+    // Style active button
+    const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(
+      btn => btn.getAttribute('onclick').includes(tabId)
+    );
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+      activeBtn.classList.remove('btn--secondary');
+      activeBtn.classList.add('btn--primary');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Init Income analytics chart on tab render
+    const monthlyIncomeData = <%- JSON.stringify(monthlyIncome) %>;
+    if (window.Charts && window.Charts.initMonthlyIncomeChart) {
+      window.Charts.initMonthlyIncomeChart('stats-income-canvas', monthlyIncomeData);
+    }
+
+    // Init Risk Concentration Doughnut chart
+    const concentrationData = <%- JSON.stringify(risk.concentration) %>;
+    if (window.Charts && window.Charts.initRiskConcentrationChart && concentrationData.length > 0) {
+      window.Charts.initRiskConcentrationChart('stats-risk-doughnut', concentrationData);
+    }
+  });
+</script>
+
+<%- include('layout/footer') %>

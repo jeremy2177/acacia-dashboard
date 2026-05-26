@@ -1,0 +1,272 @@
+<%- include('../layout/header', { title: title, pageClass: 'page-positions-detail' }) %>
+<%- include('../layout/nav') %>
+
+<main class="main-content">
+  <!-- Page Header / Breadcrumbs -->
+  <div class="page-header">
+    <div style="font-size: var(--text-xs); color: var(--color-text-secondary); display: flex; gap: var(--space-2);">
+      <a href="/positions" style="text-decoration: underline;">Positions</a>
+      <span>&gt;</span>
+      <span><%= stats.position.ticker %></span>
+    </div>
+    
+    <div class="page-title-row m-t-2">
+      <div class="flex align-center gap-4">
+        <h1><%= stats.position.ticker %> Position Detail</h1>
+        <span class="badge badge--<%= stats.position.status %>"><%= stats.position.status %></span>
+      </div>
+      <div class="flex gap-2">
+        <a href="/positions/<%= stats.position.id %>/edit" class="btn btn--secondary btn--sm">Edit Position</a>
+        <button class="btn btn--danger btn--sm" onclick="handleDeletePosition(<%= stats.position.id %>)">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash Alerts -->
+  <% if (flash.success) { %>
+    <div class="badge badge--closed w-full m-b-4" style="padding: var(--space-3); border-radius: var(--radius-md);">
+      <%= flash.success %>
+    </div>
+  <% } %>
+  <% if (flash.error) { %>
+    <div class="error-banner w-full">
+      <%= flash.error %>
+    </div>
+  <% } %>
+
+  <!-- Metrics Grid -->
+  <div class="grid-2x2-mobile">
+    <!-- Avg Purchase Price -->
+    <div class="stat-card stat-card--accent">
+      <span class="stat-label">Shares Cost Basis</span>
+      <span class="stat-value number">$<%= stats.position.avg_cost_basis.toFixed(2) %></span>
+      <span class="text-muted" style="font-size: var(--text-xs);"><%= stats.position.shares_owned %> shares owned</span>
+    </div>
+
+    <!-- Effective Cost Basis -->
+    <div class="stat-card stat-card--positive">
+      <span class="stat-label">Effective Cost Basis</span>
+      <span class="stat-value number text-success">$<%= stats.effectiveCostBasis.toFixed(2) %></span>
+      <span class="text-muted" style="font-size: var(--text-xs);">- $<%= stats.premiumPerShare.toFixed(2) %>/share offset</span>
+    </div>
+
+    <!-- Premium Collected -->
+    <div class="stat-card stat-card--positive">
+      <span class="stat-label">Total Premium Collected</span>
+      <span class="stat-value number text-success">$<%= stats.totalPremium.toFixed(2) %></span>
+      <span class="text-muted" style="font-size: var(--text-xs);"><%= stats.tradeCount %> call contract<%= stats.tradeCount !== 1 ? 's' : '' %> written</span>
+    </div>
+
+    <!-- Yield on Cost -->
+    <div class="stat-card stat-card--warning">
+      <span class="stat-label">Yield on Cost</span>
+      <span class="stat-value number text-success"><%= stats.yieldOnCost.toFixed(2) %>%</span>
+      <span class="text-muted" style="font-size: var(--text-xs);">Premium yield relative to basis</span>
+    </div>
+  </div>
+
+  <!-- Charts & Actions Panel -->
+  <div class="grid-1-col grid-2-col-desktop">
+    <!-- Position History Chart -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <h3 class="chart-title">Premium Harvest Progression</h3>
+      </div>
+      <canvas id="position-pnl-canvas"></canvas>
+    </div>
+
+    <!-- Actions Panel -->
+    <div class="card flex flex-col justify-between gap-4">
+      <div>
+        <div class="card-header">
+          <h3 class="card-title">Manage Trades</h3>
+        </div>
+        <p style="font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+          Write calls to reduce your underlying shares cost basis, or close active options trades that have met profit targets.
+        </p>
+        <div class="flex flex-col gap-3">
+          <div class="flex justify-between align-center" style="font-size: var(--text-sm); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2);">
+            <span class="text-muted">Realized Trade P&L:</span>
+            <span class="number <%= stats.realizedPnL >= 0 ? 'text-success' : 'text-danger' %>" style="font-weight: 600;">
+              <%= stats.realizedPnL >= 0 ? '+' : '' %>$<%= stats.realizedPnL.toFixed(2) %>
+            </span>
+          </div>
+          <div class="flex justify-between align-center" style="font-size: var(--text-sm); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-2);">
+            <span class="text-muted">Option Win Rate:</span>
+            <span class="number text-success" style="font-weight: 600;"><%= stats.winRate.toFixed(2) %>%</span>
+          </div>
+        </div>
+      </div>
+      
+      <% if (stats.position.status === 'active') { %>
+        <a href="/positions/<%= stats.position.id %>/trades/add" class="btn btn--primary w-full">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>Sell New Call Contract</span>
+        </a>
+      <% } else { %>
+        <button class="btn btn--secondary w-full" disabled style="cursor: not-allowed; opacity: 0.6;">
+          Position is <%= stats.position.status.toUpperCase() %>
+        </button>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Trade Log / History Grid -->
+  <div class="card flex flex-col gap-4">
+    <div class="card-header">
+      <h3 class="card-title">Option Trade Log</h3>
+    </div>
+
+    <% if (stats.trades.length === 0) { %>
+      <div class="empty-state" style="padding: var(--space-6);">
+        <span class="empty-title">No Trades Logged</span>
+        <p class="empty-text">Click the button above to write your first covered call on <%= stats.position.ticker %>.</p>
+      </div>
+    <% } else { %>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Opened</th>
+              <th>Contracts</th>
+              <th>Strike</th>
+              <th>Expiry</th>
+              <th>Premium Received</th>
+              <th>Status</th>
+              <th>P&L</th>
+              <th>Annualized</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% stats.trades.forEach(t => { %>
+              <tr>
+                <td class="number"><%= t.opened_at %></td>
+                <td class="number"><%= t.contracts %></td>
+                <td class="number">$<%= t.strike_price.toFixed(2) %></td>
+                <td class="number"><%= t.expiration_date %></td>
+                <td class="number text-success">$<%= t.premium_received.toFixed(2) %></td>
+                <td>
+                  <span class="badge badge--<%= t.status %>"><%= t.status %></span>
+                </td>
+                <td class="number <%= t.status === 'open' ? 'text-muted' : (t.profit_loss >= 0 ? 'text-success' : 'text-danger') %>">
+                  <%= t.status === 'open' ? '--' : (t.profit_loss >= 0 ? '+' : '') + '$' + t.profit_loss.toFixed(2) %>
+                </td>
+                <td class="number <%= t.status === 'open' ? 'text-muted' : (t.annualized_return >= 0 ? 'text-success' : 'text-danger') %>">
+                  <%= t.status === 'open' ? '--' : (t.annualized_return * 100).toFixed(2) + '%' %>
+                </td>
+                <td>
+                  <% if (t.status === 'open') { %>
+                    <div class="flex gap-2">
+                      <button class="btn btn--secondary btn--sm btn--success" onclick="handleCloseTrade(<%= stats.position.id %>, <%= t.id %>)" style="min-height: 28px; padding: 2px 8px;">Close</button>
+                      <button class="btn btn--secondary btn--sm btn--warning" onclick="handleAssignTrade(<%= stats.position.id %>, <%= t.id %>)" style="min-height: 28px; padding: 2px 8px;">Assign</button>
+                      <button class="btn btn--secondary btn--sm text-muted" onclick="handleExpireTrade(<%= stats.position.id %>, <%= t.id %>)" style="min-height: 28px; padding: 2px 8px;">Expire</button>
+                    </div>
+                  <% } else { %>
+                    <span class="text-muted" style="font-size: var(--text-xs);">Closed <%= t.closed_at %></span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</main>
+
+<!-- Dynamic Buyback Modal for Closing Trade -->
+<div id="buyback-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h3 class="modal-title">Close Option Contract</h3>
+    <p class="modal-body" style="margin-bottom: var(--space-4);">Enter the premium price per share paid to buy back (BTC) this contract.</p>
+    <form id="buyback-form" method="POST">
+      <div class="form-group">
+        <label for="close_price" class="form-label">Buyback Price ($ per share)</label>
+        <input type="number" id="close_price" name="close_price" class="form-control" placeholder="e.g. 0.15" required min="0.00" step="0.01">
+        <span class="form-helper">Paid to buy option back. Enter 0.00 if closed for no cost.</span>
+      </div>
+      <div class="modal-actions m-t-6">
+        <button type="button" class="btn btn--secondary modal-close-trigger" onclick="document.getElementById('buyback-modal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn btn--success">Close Position</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Inject position chart data safely
+    const chartHistory = <%- JSON.stringify(monthlyData) %>;
+    if (window.Charts && window.Charts.initPositionPnLChart && chartHistory.length > 0) {
+      window.Charts.initPositionPnLChart('position-pnl-canvas', chartHistory);
+    }
+  });
+
+  // Action event handlers
+  function handleDeletePosition(positionId) {
+    if (window.UI && window.UI.confirmAction) {
+      window.UI.confirmAction(
+        'Delete Position',
+        'Are you absolutely sure? This will delete the underlying position and ALL historical trades logged under it. This cannot be undone.',
+        'Delete All Data',
+        () => {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `/positions/${positionId}/delete`;
+          document.body.appendChild(form);
+          form.submit();
+        }
+      );
+    }
+  }
+
+  function handleCloseTrade(positionId, tradeId) {
+    const modal = document.getElementById('buyback-modal');
+    const form = document.getElementById('buyback-form');
+    if (modal && form) {
+      form.action = `/positions/${positionId}/trades/${tradeId}/close`;
+      modal.classList.add('active');
+    }
+  }
+
+  function handleExpireTrade(positionId, tradeId) {
+    if (window.UI && window.UI.confirmAction) {
+      window.UI.confirmAction(
+        'Expire Call Contract',
+        'Mark this call option as Expired. This assumes the strike was out-of-the-money (OTM) and you kept 100% of the premium.',
+        'Mark Expired',
+        () => {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `/positions/${positionId}/trades/${tradeId}/expire`;
+          document.body.appendChild(form);
+          form.submit();
+        }
+      );
+    }
+  }
+
+  function handleAssignTrade(positionId, tradeId) {
+    if (window.UI && window.UI.confirmAction) {
+      window.UI.confirmAction(
+        'Shares Assignment',
+        'Mark this position as Assigned. This will record assignment and close your underlying shares position, marking the parent holding as Assigned. Realized premium will be retained.',
+        'Confirm Assignment',
+        () => {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `/positions/${positionId}/trades/${tradeId}/assign`;
+          document.body.appendChild(form);
+          form.submit();
+        }
+      );
+    }
+  }
+</script>
+
+<%- include('../layout/footer') %>

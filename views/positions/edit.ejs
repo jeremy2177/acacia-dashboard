@@ -1,0 +1,83 @@
+<%- include('../layout/header', { title: title, pageClass: 'page-positions-edit' }) %>
+<%- include('../layout/nav') %>
+
+<main class="main-content">
+  <!-- Page Header / Breadcrumbs -->
+  <div class="page-header">
+    <div style="font-size: var(--text-xs); color: var(--color-text-secondary); display: flex; gap: var(--space-2);">
+      <a href="/positions" style="text-decoration: underline;">Positions</a>
+      <span>&gt;</span>
+      <a href="/positions/<%= position.id %>" style="text-decoration: underline;"><%= position.ticker %></a>
+      <span>&gt;</span>
+      <span>Edit</span>
+    </div>
+    <h1 class="m-t-2">Edit Underlying Position Details</h1>
+    <p class="page-subtitle">Modify parameters or update status fields for this underlying asset holding.</p>
+  </div>
+
+  <div class="card" style="max-width: 600px; margin: 0 auto; width: 100%;">
+    <div class="card-header">
+      <h3 class="card-title">Modify Holding Parameters</h3>
+    </div>
+
+    <!-- Error Banner -->
+    <% if (errors.length > 0) { %>
+      <div class="error-banner">
+        <strong>Error:</strong>
+        <ul style="margin-left: var(--space-4); margin-top: var(--space-1);">
+          <% errors.forEach(err => { %>
+            <li><%= err %></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+
+    <form action="/positions/<%= position.id %>/edit" method="POST" class="flex flex-col gap-4">
+      <div class="form-row">
+        <!-- Ticker -->
+        <div class="form-group">
+          <label for="ticker" class="form-label">Ticker Symbol</label>
+          <input type="text" id="ticker" name="ticker" class="form-control" required value="<%= position.ticker %>" style="text-transform: uppercase;">
+        </div>
+
+        <!-- Status -->
+        <div class="form-group">
+          <label for="status" class="form-label">Position Status</label>
+          <select id="status" name="status" class="form-control">
+            <option value="active" <%= position.status === 'active' ? 'selected' : '' %>>Active</option>
+            <option value="closed" <%= position.status === 'closed' ? 'selected' : '' %>>Closed (Sold shares manually)</option>
+            <option value="assigned" <%= position.status === 'assigned' ? 'selected' : '' %>>Assigned (Option exercised)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <!-- Shares Owned -->
+        <div class="form-group">
+          <label for="shares_owned" class="form-label">Shares Owned</label>
+          <input type="number" id="shares_owned" name="shares_owned" class="form-control" required min="100" step="100" value="<%= position.shares_owned %>">
+        </div>
+
+        <!-- Average Cost Basis -->
+        <div class="form-group">
+          <label for="avg_cost_basis" class="form-label">Average Cost Basis ($)</label>
+          <input type="number" id="avg_cost_basis" name="avg_cost_basis" class="form-control" required min="0.01" step="0.01" value="<%= position.avg_cost_basis %>">
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group">
+        <label for="notes" class="form-label">Position Notes</label>
+        <textarea id="notes" name="notes" class="form-control" rows="3"><%= position.notes || '' %></textarea>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="form-actions flex justify-end gap-3 m-t-4">
+        <a href="/positions/<%= position.id %>" class="btn btn--secondary">Cancel</a>
+        <button type="submit" class="btn btn--primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<%- include('../layout/footer') %>

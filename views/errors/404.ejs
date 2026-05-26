@@ -1,0 +1,19 @@
+<%- include('../layout/header', { title: '404 - Not Found', pageClass: 'page-error' }) %>
+<%- include('../layout/nav') %>
+
+<main class="main-content flex flex-col align-center justify-center" style="min-height: 70vh; text-align: center;">
+  <div class="card flex flex-col align-center gap-4" style="max-width: 440px; padding: var(--space-8);">
+    <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--color-danger);">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <h1 style="font-size: var(--text-2xl); font-weight: 700;">Page Not Found</h1>
+    <p style="font-size: var(--text-sm); color: var(--color-text-secondary); line-height: 1.6;">
+      The page you are looking for does not exist or has been moved to a different URL location.
+    </p>
+    <a href="/" class="btn btn--primary w-full m-t-4">Back to Dashboard</a>
+  </div>
+</main>
+
+<%- include('../layout/footer') %>

@@ -1,0 +1,99 @@
+/* Mobile-First Adjustments and Touch Target Polish */
+
+/* General safe margins on tiny viewports */
+@media (max-width: 375px) {
+  :root {
+    --text-3xl: 1.5rem;
+    --text-2xl: 1.25rem;
+    --text-xl: 1.125rem;
+  }
+
+  .main-content {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+}
+
+/* Horizontal scrollable position strips */
+.scroll-strip {
+  display: flex;
+  overflow-x: auto;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Hide scrollbar for clean strip look */
+}
+
+.scroll-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-strip-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+}
+
+/* Row Expandability / Toggles for Mobile list items */
+.mobile-expandable {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-expand-header {
+  padding: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mobile-expand-body {
+  padding: 0 var(--space-4) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  display: none;
+  background-color: rgba(34, 38, 58, 0.2);
+}
+
+.mobile-expand-body.active {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.expand-chevron {
+  transition: transform var(--transition-fast);
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-secondary);
+}
+
+.mobile-expand-body.active ~ .mobile-expand-header .expand-chevron {
+  transform: rotate(180deg);
+}
+
+/* Fix forms layout for tiny viewports */
+@media (max-width: 640px) {
+  .form-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--space-3);
+  }
+  
+  .form-actions .btn {
+    width: 100%;
+  }
+
+  /* Optimize quick detail lists on mobile */
+  .grid-mobile-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+}

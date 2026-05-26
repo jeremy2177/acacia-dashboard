@@ -1,0 +1,23 @@
+{
+  "name": "covered-calls-dashboard",
+  "version": "1.0.0",
+  "description": "Mobile-first covered calls trading dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npx nodemon server.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
+    "mysql2": "^3.11.0",
+    "session-file-store": "^1.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

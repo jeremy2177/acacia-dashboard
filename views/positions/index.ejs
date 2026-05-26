@@ -1,0 +1,185 @@
+<%- include('../layout/header', { title: 'Underlying Positions', pageClass: 'page-positions' }) %>
+<%- include('../layout/nav') %>
+
+<main class="main-content">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-title-row">
+      <h1>All Covered Call Positions</h1>
+      <a href="/positions/add" class="btn btn--primary">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add Position</span>
+      </a>
+    </div>
+    <p class="page-subtitle">Track and filter underlying positions and their relative premium harvests.</p>
+  </div>
+
+  <!-- Filters & Sorting Control Panel -->
+  <div class="card flex flex-col gap-4">
+    <form action="/positions" method="GET" class="flex flex-col gap-4 lg:flex-row lg:align-center lg:justify-between">
+      <div class="flex flex-col gap-3 sm:flex-row sm:align-center">
+        <!-- Status Filter -->
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: var(--text-xs);">Status</label>
+          <select name="status" class="form-control" onchange="this.form.submit()" style="min-height: 38px; padding: 4px var(--space-4);">
+            <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Statuses</option>
+            <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active</option>
+            <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
+            <option value="assigned" <%= filters.status === 'assigned' ? 'selected' : '' %>>Assigned</option>
+          </select>
+        </div>
+
+        <!-- Ticker Search -->
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: var(--text-xs);">Ticker</label>
+          <select name="ticker" class="form-control" onchange="this.form.submit()" style="min-height: 38px; padding: 4px var(--space-4);">
+            <option value="">All Tickers</option>
+            <% tickers.forEach(t => { %>
+              <option value="<%= t.ticker %>" <%= filters.ticker === t.ticker ? 'selected' : '' %>><%= t.ticker %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <!-- Sorting Select -->
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label" style="font-size: var(--text-xs);">Sort By</label>
+        <select name="sort" class="form-control" onchange="this.form.submit()" style="min-height: 38px; padding: 4px var(--space-4);">
+          <option value="opened" <%= filters.sort === 'opened' ? 'selected' : '' %>>Opened Date</option>
+          <option value="ticker" <%= filters.sort === 'ticker' ? 'selected' : '' %>>Ticker A-Z</option>
+          <option value="status" <%= filters.sort === 'status' ? 'selected' : '' %>>Status</option>
+          <option value="cost" <%= filters.sort === 'cost' ? 'selected' : '' %>>Cost Basis</option>
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <!-- Positions List -->
+  <% if (positions.length === 0) { %>
+    <div class="empty-state">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span class="empty-title">No Positions Found</span>
+      <p class="empty-text">No matches under current filter criteria.</p>
+      <a href="/positions/add" class="btn btn--primary">Log Position</a>
+    </div>
+  <% } else { %>
+    <!-- Mobile Accordion Cards (visible on smaller screens) -->
+    <div class="lg:hidden">
+      <% positions.forEach(p => { %>
+        <div class="mobile-expandable">
+          <div class="mobile-expand-header">
+            <div class="flex flex-col">
+              <span class="number" style="font-weight: 700; font-size: var(--text-base);"><%= p.ticker %></span>
+              <span class="number text-muted" style="font-size: var(--text-xs);">Basis: $<%= p.avg_cost_basis.toFixed(2) %></span>
+            </div>
+            <div class="flex align-center gap-2">
+              <span class="badge badge--<%= p.status %>"><%= p.status %></span>
+              <svg class="expand-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="mobile-expand-body">
+            <div class="grid-mobile-details">
+              <div class="flex flex-col">
+                <span class="text-muted" style="font-size: var(--text-xs);">Shares</span>
+                <span class="number"><%= p.shares_owned %></span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-muted" style="font-size: var(--text-xs);">Effective Basis</span>
+                <span class="number">$<%= p.effective_cost_basis.toFixed(2) %></span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-muted" style="font-size: var(--text-xs);">Premium Collected</span>
+                <span class="number text-success">$<%= p.total_premium.toFixed(2) %></span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-muted" style="font-size: var(--text-xs);">Realized P&L</span>
+                <span class="number <%= p.total_pnl >= 0 ? 'text-success' : 'text-danger' %>">
+                  $<%= p.total_pnl.toFixed(2) %>
+                </span>
+              </div>
+              <% if (p.next_expiry) { %>
+                <div class="flex flex-col">
+                  <span class="text-muted" style="font-size: var(--text-xs);">Next Expiration</span>
+                  <span class="number <%= p.days_to_next_expiry <= 7 ? 'text-danger' : (p.days_to_next_expiry <= 21 ? 'text-warning' : 'text-success') %>">
+                    <%= p.next_expiry %> (<%= p.days_to_next_expiry %>d)
+                  </span>
+                </div>
+              <% } %>
+            </div>
+            <div class="flex gap-2 w-full m-t-4">
+              <a href="/positions/<%= p.id %>" class="btn btn--secondary btn--sm flex-1">Deep Dive Stats</a>
+              <% if (p.status === 'active') { %>
+                <a href="/positions/<%= p.id %>/trades/add" class="btn btn--primary btn--sm flex-1">Sell Call Option</a>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+    <!-- Desktop Grid Table (visible on larger viewports) -->
+    <div class="table-wrapper hidden lg:block">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Shares</th>
+            <th>Avg Cost Basis</th>
+            <th>Effective Basis</th>
+            <th>Premium Collected</th>
+            <th>Realized P&L</th>
+            <th>Trades Count</th>
+            <th>Next Expiration</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% positions.forEach(p => { %>
+            <tr>
+              <td class="number" style="font-weight: 700;"><%= p.ticker %></td>
+              <td class="number"><%= p.shares_owned %></td>
+              <td class="number">$<%= p.avg_cost_basis.toFixed(2) %></td>
+              <td class="number">$<%= p.effective_cost_basis.toFixed(2) %></td>
+              <td class="number text-success">$<%= p.total_premium.toFixed(2) %></td>
+              <td class="number <%= p.total_pnl >= 0 ? 'text-success' : 'text-danger' %>">
+                $<%= p.total_pnl.toFixed(2) %>
+              </td>
+              <td class="number"><%= p.trade_count %></td>
+              <td class="number">
+                <% if (p.next_expiry) { %>
+                  <span class="<%= p.days_to_next_expiry <= 7 ? 'text-danger' : (p.days_to_next_expiry <= 21 ? 'text-warning' : 'text-success') %>">
+                    <%= p.next_expiry %> (<%= p.days_to_next_expiry %>d)
+                  </span>
+                <% } else { %>
+                  <span class="text-muted">None</span>
+                <% } %>
+              </td>
+              <td>
+                <span class="badge badge--<%= p.status %>"><%= p.status %></span>
+              </td>
+              <td>
+                <div class="flex gap-2">
+                  <a href="/positions/<%= p.id %>" class="btn btn--secondary btn--sm">View</a>
+                  <% if (p.status === 'active') { %>
+                    <a href="/positions/<%= p.id %>/trades/add" class="btn btn--primary btn--sm">Sell Call</a>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</main>
+
+<%- include('../layout/footer') %>

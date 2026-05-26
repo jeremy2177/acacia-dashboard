@@ -1,0 +1,174 @@
+<%- include('../layout/header', { title: title, pageClass: 'page-positions-add-trade' }) %>
+<%- include('../layout/nav') %>
+
+<main class="main-content">
+  <!-- Page Header / Breadcrumbs -->
+  <div class="page-header">
+    <div style="font-size: var(--text-xs); color: var(--color-text-secondary); display: flex; gap: var(--space-2);">
+      <a href="/positions" style="text-decoration: underline;">Positions</a>
+      <span>&gt;</span>
+      <a href="/positions/<%= position.id %>" style="text-decoration: underline;"><%= position.ticker %></a>
+      <span>&gt;</span>
+      <span>Log Option Trade</span>
+    </div>
+    <h1 class="m-t-2">Sell Covered Call Option</h1>
+    <p class="page-subtitle">Record the details of the call option sold against your <%= position.ticker %> holdings.</p>
+  </div>
+
+  <!-- Main layout grid: Form on left, live calculators on right -->
+  <div class="grid-1-col grid-2-col-desktop">
+    <!-- Log Trade Form -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Call Option Details</h3>
+      </div>
+
+      <!-- Error display banner -->
+      <% if (errors.length > 0) { %>
+        <div class="error-banner">
+          <strong>Error:</strong>
+          <ul style="margin-left: var(--space-4); margin-top: var(--space-1);">
+            <% errors.forEach(err => { %>
+              <li><%= err %></li>
+            <% }) %>
+          </ul>
+        </div>
+      <% } %>
+
+      <form action="/positions/<%= position.id %>/trades" method="POST" class="flex flex-col gap-4">
+        <!-- Hidden input for ticker -->
+        <input type="hidden" name="ticker" value="<%= position.ticker %>">
+
+        <div class="form-row">
+          <!-- Strike Price -->
+          <div class="form-group">
+            <label for="strike_price" class="form-label">Strike Price ($)</label>
+            <input type="number" id="strike_price" name="strike_price" class="form-control" placeholder="e.g. 150.00" required min="0.01" step="0.01" value="<%= data.strike_price || '' %>">
+            <span class="form-helper">The target strike price for the call option</span>
+          </div>
+
+          <!-- Premium Received (Total) -->
+          <div class="form-group">
+            <label for="premium_received" class="form-label">Total Premium Received ($)</label>
+            <input type="number" id="premium_received" name="premium_received" class="form-control" placeholder="e.g. 245.00" required min="0.01" step="0.01" value="<%= data.premium_received || '' %>">
+            <span class="form-helper">Total gross premium cash collected (premium * 100 * contracts)</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Contracts -->
+          <div class="form-group">
+            <label for="contracts" class="form-label">Contracts Sold</label>
+            <input type="number" id="contracts" name="contracts" class="form-control" placeholder="e.g. 1" required min="1" step="1" value="<%= data.contracts || Math.floor(position.shares_owned / 100) %>">
+            <span class="form-helper">Standard multiplier is 100 shares per contract. Pre-filled based on shares.</span>
+          </div>
+
+          <!-- Open Price (Per share premium) -->
+          <div class="form-group">
+            <label for="open_price" class="form-label">Premium Per Share ($)</label>
+            <input type="number" id="open_price" name="open_price" class="form-control" placeholder="e.g. 2.45" min="0.00" step="0.01" value="<%= data.open_price || '' %>">
+            <span class="form-helper">Optional. Standard calculation is (Total Premium / Contracts / 100)</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Opened At -->
+          <div class="form-group">
+            <label for="opened_at" class="form-label">Write/Open Date</label>
+            <input type="date" id="opened_at" name="opened_at" class="form-control" required value="<%= data.opened_at || '' %>">
+            <span class="form-helper">When you sold the call option</span>
+          </div>
+
+          <!-- Expiration Date -->
+          <div class="form-group">
+            <label for="expiration_date" class="form-label">Expiration Date</label>
+            <input type="date" id="expiration_date" name="expiration_date" class="form-control" required value="<%= data.expiration_date || '' %>">
+            <span class="form-helper">When the option contract expires</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Underlying price at entry -->
+          <div class="form-group">
+            <label for="underlying_price_at_entry" class="form-label">Underlying Stock Price ($)</label>
+            <input type="number" id="underlying_price_at_entry" name="underlying_price_at_entry" class="form-control" placeholder="e.g. 147.20" min="0.01" step="0.01" value="<%= data.underlying_price_at_entry || '' %>">
+            <span class="form-helper">Optional. Stock trading price at the time of writing this option</span>
+          </div>
+
+          <!-- IV -->
+          <div class="form-group">
+            <label for="iv_at_entry" class="form-label">Implied Volatility (%)</label>
+            <input type="number" id="iv_at_entry" name="iv_at_entry" class="form-control" placeholder="e.g. 34.5" min="0.1" step="0.1" value="<%= data.iv_at_entry || '' %>">
+            <span class="form-helper">Optional. Useful for analyzing trade IV stats later</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Delta -->
+          <div class="form-group">
+            <label for="delta_at_entry" class="form-label">Option Delta (Δ)</label>
+            <input type="number" id="delta_at_entry" name="delta_at_entry" class="form-control" placeholder="e.g. 0.30" min="0.01" max="0.99" step="0.01" value="<%= data.delta_at_entry || '' %>">
+            <span class="form-helper">Optional. (e.g. 0.30 delta)</span>
+          </div>
+
+          <!-- Form Notes -->
+          <div class="form-group">
+            <label for="notes" class="form-label">Trade Notes (Optional)</label>
+            <input type="text" id="notes" name="notes" class="form-control" placeholder="e.g. Rolled from last week, earnings play" value="<%= data.notes || '' %>">
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions flex justify-end gap-3 m-t-4">
+          <a href="/positions/<%= position.id %>" class="btn btn--secondary">Cancel</a>
+          <button type="submit" class="btn btn--primary">Log Trade</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Live Preview Calculations Panel -->
+    <div class="card flex flex-col gap-4">
+      <div class="card-header">
+        <h3 class="card-title">Live Return Projection</h3>
+      </div>
+      <p style="font-size: var(--text-sm); color: var(--color-text-secondary);">
+        These metrics update in real-time as strike prices, premium numbers, and expiration dates are populated.
+      </p>
+
+      <div class="flex flex-col gap-4 m-t-4" style="flex: 1; justify-content: center;">
+        <!-- Capital at risk -->
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3);">
+          <span class="text-muted" style="font-weight: 500;">Capital at Risk:</span>
+          <span id="risk-preview" class="number" style="font-size: var(--text-lg); font-weight: 700; color: var(--color-text-primary);">$0.00</span>
+        </div>
+
+        <!-- Days to Expiry -->
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3);">
+          <span class="text-muted" style="font-weight: 500;">Days to Expiry (DTE):</span>
+          <span id="dte-preview" class="number" style="font-size: var(--text-lg); font-weight: 700; color: var(--color-text-primary);">0 days</span>
+        </div>
+
+        <!-- Return on Capital -->
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3);">
+          <span class="text-muted" style="font-weight: 500;">Return on Capital (ROC):</span>
+          <span id="roc-preview" class="number text-success" style="font-size: var(--text-lg); font-weight: 700;">0.00%</span>
+        </div>
+
+        <!-- Annualized Return -->
+        <div class="flex justify-between align-center" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3);">
+          <span class="text-muted" style="font-weight: 500;">Annualized Return:</span>
+          <span id="annualized-preview" class="number text-success" style="font-size: var(--text-2xl); font-weight: 800;">0.00%</span>
+        </div>
+      </div>
+
+      <div class="badge badge--open" style="padding: var(--space-3); border-radius: var(--radius-md); text-align: left; text-transform: none; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+        <strong style="color: var(--color-accent);">Covered Call Concept:</strong>
+        <p style="font-size: var(--text-xs); line-height: 1.4; color: var(--color-text-primary);">
+          By selling a call option, you receive immediate premium cash. In exchange, you commit to sell your underlying shares at the specified strike price if the stock is at or above the strike on expiration.
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../layout/footer') %>

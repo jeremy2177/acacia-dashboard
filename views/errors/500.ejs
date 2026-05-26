@@ -1,0 +1,26 @@
+<%- include('../layout/header', { title: '500 - Server Error', pageClass: 'page-error' }) %>
+<%- include('../layout/nav') %>
+
+<main class="main-content flex flex-col align-center justify-center" style="min-height: 70vh; text-align: center;">
+  <div class="card flex flex-col align-center gap-4" style="max-width: 500px; padding: var(--space-8); border-color: var(--color-danger);">
+    <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--color-danger);">
+      <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <h1 style="font-size: var(--text-2xl); font-weight: 700; color: var(--color-danger);">System Server Error</h1>
+    <p style="font-size: var(--text-sm); color: var(--color-text-secondary); line-height: 1.6;">
+      An unexpected internal process error occurred on the application server. Details below:
+    </p>
+    
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div style="background-color: var(--color-bg); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border); width: 100%; text-align: left; overflow-x: auto;">
+        <code style="font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-danger); white-space: pre-wrap;"><%= error %></code>
+      </div>
+    <% } %>
+    
+    <a href="/" class="btn btn--secondary w-full m-t-4">Return Home</a>
+  </div>
+</main>
+
+<%- include('../layout/footer') %>
