@@ -4,7 +4,7 @@
   "description": "Mobile-first covered calls trading dashboard",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --watch server.js",
     "dev": "npx nodemon server.js",
     "seed": "node scripts/seed.js"
   },
@@ -15,8 +15,7 @@
     "express": "^4.21.1",
     "express-session": "^1.18.1",
     "mysql2": "^3.11.0",
-    "session-file-store": "^1.5.0",
-    "sqlite3": "^6.0.1"
+    "session-file-store": "^1.5.0"
   },
   "engines": {
     "node": ">=20.0.0"

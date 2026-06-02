@@ -9,6 +9,7 @@ async function seed() {
   try {
     // Ensure DB is initialized
     await initDB();
+    console.log('Make sure sql/schema.sql has been applied before seeding.');
     
     // Wipe existing data
     await runSql('DELETE FROM trades;');
