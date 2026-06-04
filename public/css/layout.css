@@ -170,8 +170,8 @@
 }
 
 .grid-1-col {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
 }
 
@@ -223,8 +223,8 @@
   }
 
   .grid-2-col-desktop {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: var(--space-6);
   }
 
@@ -233,4 +233,18 @@
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-6);
   }
+ 
+  
+  /* Responsive utility classes
+  .lg\:hidden {
+    display: none;
+  }
+
+  .lg\:block {
+    display: block;
+  }
+
+  .hidden {
+    display: none;
+  } */
 }
