@@ -172,14 +172,14 @@ class Trade {
   }
 
   static async getRecentActivity(limit = 5) {
-    const limitValue = parseInt(limit, 10);
+    const limitValue = Math.max(1, Math.min(parseInt(limit, 10), 1000)); // Validate: 1-1000
     return await queryAll(`
       SELECT t.*, p.shares_owned, p.avg_cost_basis 
       FROM trades t 
       LEFT JOIN positions p ON t.position_id = p.id 
       ORDER BY t.created_at DESC 
-      LIMIT ?
-    `, [limitValue]);
+      LIMIT ${limitValue}
+    `);
   }
 
   static async getOpenTrades() {
