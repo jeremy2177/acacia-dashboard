@@ -33,4 +33,26 @@ router.get('/export/trades', async (req, res) => {
   }
 });
 
+router.post('/trades/:id/assess', async (req, res) => {
+  try {
+    const { currentUnderlyingPrice, currentOptionPrice } = req.body;
+    
+    if (!currentUnderlyingPrice || currentOptionPrice === undefined) {
+      return res.status(400).json({ 
+        error: 'Missing currentUnderlyingPrice or currentOptionPrice' 
+      });
+    }
+
+    const assessment = await Trade.assessAction(
+      parseInt(req.params.id),
+      parseFloat(currentUnderlyingPrice),
+      parseFloat(currentOptionPrice)
+    );
+
+    res.json(assessment);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 module.exports = router;

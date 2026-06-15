@@ -191,6 +191,68 @@ class Trade {
       ORDER BY t.expiration_date ASC
     `);
   }
+
+  /**
+   * Assess whether to roll or close a trade based on live market data
+   * @param {number} id - Trade ID
+   * @param {number} currentUnderlyingPrice - Current underlying stock price
+   * @param {number} currentOptionPrice - Current option price (bid to buy back)
+   * @returns {Object} Assessment with recommendations
+   */
+  static async assessAction(id, currentUnderlyingPrice, currentOptionPrice) {
+    const trade = await this.getById(id);
+    if (!trade) throw new Error('Trade not found');
+    
+    const dte = dayjs(trade.expiration_date).diff(dayjs(), 'day');
+    const premiumReceived = parseFloat(trade.premium_received);
+    const strikePrice = parseFloat(trade.strike_price);
+    const contracts = parseInt(trade.contracts);
+    
+    // P&L calculations
+    const buybackCost = currentOptionPrice * contracts * 100;
+    const currentPnL = premiumReceived - buybackCost;
+    const pnlPercent = (currentPnL / premiumReceived) * 100;
+    
+    // Spread analysis
+    const spreadPercent = ((currentUnderlyingPrice - strikePrice) / strikePrice) * 100;
+    const isInTheMoney = currentUnderlyingPrice > strikePrice;
+    const daysHeld = dayjs().diff(dayjs(trade.opened_at), 'day');
+
+    // ROLL decision: 50-75% P&L hit, DTE < 7, not deep ITM
+    const shouldRoll = pnlPercent >= 50 && pnlPercent <= 75 && dte < 7 && spreadPercent < 10;
+    const rollReasons = [];
+    if (pnlPercent >= 50 && pnlPercent <= 75) rollReasons.push(`Target P&L: ${pnlPercent.toFixed(1)}%`);
+    if (dte < 7) rollReasons.push(`DTE critical: ${dte} days`);
+    if (spreadPercent < 10) rollReasons.push(`Not deep ITM: ${spreadPercent.toFixed(1)}%`);
+
+    // CLOSE decision: ITM, early exit >25% profit
+    const shouldClose = isInTheMoney || (daysHeld <= 30 && pnlPercent >= 25 && dte > 15);
+    const closeReasons = [];
+    if (isInTheMoney) closeReasons.push(`In-the-money at $${currentUnderlyingPrice.toFixed(2)}`);
+    if (daysHeld <= 30 && pnlPercent >= 25 && dte > 15) closeReasons.push(`Early exit: ${pnlPercent.toFixed(1)}% profit`);
+
+    return {
+      tradeId: id,
+      ticker: trade.ticker,
+      currentUnderlyingPrice,
+      currentOptionPrice,
+      currentPnL: Math.round(currentPnL * 100) / 100,
+      pnlPercent: Math.round(pnlPercent * 100) / 100,
+      maxProfitPotential: Math.round(premiumReceived * 100) / 100,
+      dte,
+      daysHeld,
+      strikePrice,
+      spreadPercent: Math.round(spreadPercent * 100) / 100,
+      isInTheMoney,
+      shouldRoll,
+      rollReasons,
+      shouldClose,
+      closeReasons,
+      recommendedAction: shouldClose ? 'CLOSE' : (shouldRoll ? 'ROLL' : 'HOLD'),
+      actionRequired: shouldRoll || shouldClose,
+      trade
+    };
+  }
 }
 
 module.exports = Trade;
