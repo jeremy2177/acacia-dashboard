@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Position = require('../models/Position');
 const Trade = require('../models/Trade');
+const { requireAuth } = require('../middleware/auth');
+
+// Apply authentication to all routes
+router.use(requireAuth);
 
 router.get('/export/positions', async (req, res) => {
   try {

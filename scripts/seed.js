@@ -2,6 +2,7 @@ const { initDB, runSql } = require('../config/database');
 const Position = require('../models/Position');
 const Trade = require('../models/Trade');
 const dayjs = require('dayjs');
+const bcrypt = require('bcrypt');
 
 async function seed() {
   console.log('Starting developer database seeding for MySQL...');
@@ -14,7 +15,16 @@ async function seed() {
     // Wipe existing data
     await runSql('DELETE FROM trades;');
     await runSql('DELETE FROM positions;');
-    console.log('Wiped existing trades and positions successfully.');
+    await runSql('DELETE FROM users;');
+    console.log('Wiped existing trades, positions, and users successfully.');
+
+    // Create default user with bcrypt hashed password
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    await runSql(
+      'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
+      ['trader', 'trader@example.com', hashedPassword]
+    );
+    console.log('Created default user: username=trader, password=password123');
 
     const now = dayjs();
     

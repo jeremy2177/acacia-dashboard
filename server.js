@@ -43,6 +43,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Auth middleware
+const { requireAuth, requireGuest, injectUser } = require('./middleware/auth');
+app.use(injectUser);
+
 // Routes
 app.use('/', require('./routes/index'));
 app.use('/positions', require('./routes/positions'));

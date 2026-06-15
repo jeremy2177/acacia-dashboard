@@ -9,6 +9,7 @@
     "seed": "node scripts/seed.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
